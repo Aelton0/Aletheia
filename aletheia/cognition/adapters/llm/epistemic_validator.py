@@ -5,7 +5,7 @@ Separa explicitamente a confiança autodeclarada do modelo do suporte conferido 
 """
 
 from enum import Enum
-from typing import List, Set
+from typing import List, Optional, Set
 from pydantic import BaseModel, Field
 from aletheia.cognition.adapters.llm.schemas import LLMCritiquePayload
 from aletheia.core.context.projection import CognitiveProjection
@@ -55,15 +55,27 @@ class EpistemicValidator:
         cls,
         payload: LLMCritiquePayload,
         projection: CognitiveProjection,
+        raw_payload: Optional[LLMCritiquePayload] = None,
     ) -> EpistemicValidationResult:
         audit_notes: List[str] = []
         injection_detected = False
 
         # 1. Auditoria de Defesa contra Prompt Injection
-        # Verifica se o modelo sucumbiu a instruções de controle que estavam dentro dos dados
-        text_corpus = (
-            payload.reasoning_summary + " " + " ".join(arg.rationale for arg in payload.arguments)
-        ).lower()
+        # Verifica se o modelo sucumbiu a instruções de controle (analisa payload ativo e bruto)
+        target_payloads = [payload]
+        if raw_payload is not None and raw_payload is not payload:
+            target_payloads.append(raw_payload)
+
+        corpus_parts: List[str] = []
+        for p in target_payloads:
+            if p.reasoning_summary:
+                corpus_parts.append(p.reasoning_summary)
+            for arg in p.arguments:
+                corpus_parts.append(arg.rationale)
+            for unk in p.unknowns:
+                corpus_parts.append(unk.description)
+
+        text_corpus = " ".join(corpus_parts).lower()
 
         for pattern in cls.INJECTION_PATTERNS:
             if pattern in text_corpus:

@@ -98,7 +98,7 @@ class LLMCritiqueCapability(CognitiveCapability):
         valid_payload = struct_res.purged_payload or raw_payload
 
         # 4. CAMADA 2: Validação Epistemológica (grounding, anti-injeção e suporte calibrado)
-        epistemic_res = EpistemicValidator.validate(valid_payload, projection)
+        epistemic_res = EpistemicValidator.validate(valid_payload, projection, raw_payload=raw_payload)
         if epistemic_res.status == ValidationStatus.REJECTED:
             return CapabilityResult(
                 capability_name=self.contract.identity,

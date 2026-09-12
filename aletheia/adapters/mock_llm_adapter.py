@@ -66,11 +66,17 @@ class MockLLMAdapter(LLMProviderPort):
         output_json = selected_output.model_dump_json()
         raw_hash = hashlib.sha256(output_json.encode("utf-8")).hexdigest()
 
+        prompt_tokens = len(prompt.split())
+        completion_tokens = len(output_json.split())
         response = LLMResponse(
             parsed_output=selected_output,
             model="mock-deterministic-v1",
             provider="mock",
-            usage={"prompt_tokens": len(prompt.split()), "completion_tokens": len(output_json.split()), "total_tokens": 200},
+            usage={
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": prompt_tokens + completion_tokens,
+            },
             latency_ms=round(latency_ms, 2),
             finish_reason="stop",
             raw_response_hash=raw_hash,

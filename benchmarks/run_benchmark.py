@@ -155,10 +155,16 @@ def run_benchmark_suite() -> Dict[str, Any]:
     avg_depth_det = sum(r["det_depth"] for r in results) / len(results)
 
     print(f"\n📊 RESUMO DO BENCHMARK ({len(results)} Cenários Canônicos):")
-    print(f"   • Taxa de Alucinação Referencial (RHR): {avg_rhr * 100:.1f}% (Meta 0.0% atingida ✅)")
-    print(f"   • Taxa de Grounding Epistêmico (CGR):   {avg_cgr * 100:.1f}% (Meta >= 90% atingida ✅)")
-    print(f"   • Profundidade Crítica Média:           Determinístico: {avg_depth_det:.1f}/5 | LLM: {avg_depth_llm:.1f}/5 (+{((avg_depth_llm/avg_depth_det)-1)*100:.0f}%)")
+    print(f"   • Taxa de Alucinação Referencial (RHR): {avg_rhr * 100:.1f}% (Conformidade contratual do mock)")
+    print(f"   • Taxa de Grounding Epistêmico (CGR):   {avg_cgr * 100:.1f}% (Conformidade de premissas autorizadas)")
+    print(f"   • Profundidade Crítica Avaliada:        Det: {avg_depth_det:.1f}/5 | LLM: {avg_depth_llm:.1f}/5 (Heurística interna)")
     print(f"   • Sucesso de Validação pelo Kernel:     100% de aceitação sem corrupção de estado ✅")
+    print("\n⚠️  NOTA METODOLÓGICA DE ESCOPO:")
+    print("   • Provedor em Teste: MockLLMAdapter cooperativo e determinístico em memória.")
+    print("   • Escopo: Valida integração de dados e despacho do CapabilityRuntime.")
+    print("   • Robustez Adversarial: Auditada separadamente em testes direcionados de segurança")
+    print("     (test_llm_security_boundary.py, test_injection_defense.py).")
+    print("   • Latência: Medição de função local em memória (ms), sem relação com chamadas de rede reais.")
     print("=" * 80)
 
     return {
