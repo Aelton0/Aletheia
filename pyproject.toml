@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aletheia"
+version = "0.1.0"
+description = "Aletheia: Sistema de Cognição Colaborativa Humano-IA"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "Aelton", email = "aelton@example.com" }
+]
+dependencies = [
+    "pydantic>=2.0.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
