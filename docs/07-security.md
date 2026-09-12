@@ -56,6 +56,10 @@ flowchart TD
 
 ### 1.2. Estágio 2: Validação Epistemológica e Grounding
 * **Arquivo**: [`aletheia/cognition/adapters/llm/epistemic_validator.py`](file:///home/Aelton0/Dev/Projeto%20AGI/Aletheia/aletheia/cognition/adapters/llm/epistemic_validator.py)
+* **Inspeção de Payload Limpo e Bruto**: Para fechar rotas de evasão, o validador epistêmico inspeciona tanto o `valid_payload` (purgado pela Camada 1) quanto o `raw_payload` original. Sem isso, uma injeção embutida dentro de um argumento com premissas alucinadas (descartado na Camada 1) escaparia da detecção epistêmica.
+* **Política Fail-Safe "Tudo ou Nada"**: A detecção de qualquer padrão de injeção em qualquer parte do corpus concatenado (incluindo `unknowns` e argumentos descartados) invalida a resposta inteira com `ValidationStatus.REJECTED`, emitindo zero entidades para o Kernel.
+  * *Nota de Design*: Trata-se de uma decisão deliberada e conservadora de segurança (*fail-safe over fail-open*).
+  * *Observação de Roadmap para M4*: Em deliberações dialéticas multi-especialista com múltiplos proponentes concorrentes, será necessário avaliar se a rejeição em bloco deve operar por especialista/proponente individual para evitar que a injeção em uma contribuição contamine contribuições honestas e independentes de outros especialistas.
 * **Desacoplamento de Confiança**: O modelo pode retornar `model_confidence = 0.99`, mas o Kernel ignora essa autoavaliação probabilística e atribui suporte real com base na ontologia das premissas:
   * Apoia-se em `VERIFIED_FACT` $\to$ `EpistemicSupportLevel.HIGH`
   * Apoia-se em `ASSUMPTION` $\to$ `EpistemicSupportLevel.MEDIUM`

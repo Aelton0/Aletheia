@@ -7,8 +7,8 @@ A auditoria da suíte de testes do Aletheia revela uma disciplina de engenharia 
 ## 1. Inventário da Suíte de Testes
 
 * **Framework de Testes**: `pytest` 9.1.1 configurado em [`pyproject.toml`](file:///home/Aelton0/Dev/Projeto%20AGI/Aletheia/pyproject.toml#L23-L27).
-* **Tempo de Execução**: ~0.12 segundos para toda a suíte de 25 testes (*FATO*).
-* **Taxa de Sucesso**: 100% (25 aprovados, 0 falhas, 0 warnings).
+* **Tempo de Execução**: ~0.12 segundos para toda a suíte de 27 testes (*FATO*).
+* **Taxa de Sucesso**: 100% (27 aprovados, 0 falhas, 0 warnings).
 
 | Arquivo de Teste | Quantidade de Testes | Foco / Invariantes Cobertos | Nível |
 | :--- | :--- | :--- | :--- |
@@ -20,7 +20,7 @@ A auditoria da suíte de testes do Aletheia revela uma disciplina de engenharia 
 | [`test_interactive_session.py`](file:///home/Aelton0/Dev/Projeto%20AGI/Aletheia/tests/test_interactive_session.py) | 1 | **Milestone 1 Golden Scenario**: Sessão interativa em 10 passos (problema, premissas, contestação humana, mudança de foco, interpretação, CDR e replay). | Integração / E2E |
 | [`test_projection_and_synthesizer.py`](file:///home/Aelton0/Dev/Projeto%20AGI/Aletheia/tests/test_projection_and_synthesizer.py) | 2 | Motor de Projeção Contextual: preservação de metas/restrições invariantes e filtragem por saliência de foco; sintetizador detecta suposições ativas e premissas invalidadas. | Unitário / Integração |
 | [`test_capability_runtime.py`](file:///home/Aelton0/Dev/Projeto%20AGI/Aletheia/tests/test_capability_runtime.py) | 3 | **Milestone 2 Golden Scenario**: Cenário em 14 passos do runtime; isolamento adversarial (capacidade não tem acesso ao grafo global); QuestionGenerationCapability. | Integração |
-| [`test_llm_security_boundary.py`](file:///home/Aelton0/Dev/Projeto%20AGI/Aletheia/tests/test_llm_security_boundary.py) | 2 | Validação Estrutural (purga de IDs alucinados pelo LLM); Validação Epistêmica (desacoplamento de confiança e suporte conferido pelo Kernel). | Integração |
+| [`test_llm_security_boundary.py`](file:///home/Aelton0/Dev/Projeto%20AGI/Aletheia/tests/test_llm_security_boundary.py) | 4 | Validação Estrutural (purga de IDs alucinados); Validação Epistêmica (desacoplamento de confiança e suporte); Auditabilidade de Metadados (hash SHA-256 e tokens); Quarentena de Provedor Hostil Não-Cooperativo. | Integração / Adversarial |
 | [`test_injection_defense.py`](file:///home/Aelton0/Dev/Projeto%20AGI/Aletheia/tests/test_injection_defense.py) | 2 | Serializador demarca dados proposicionais de instruções; validador epistêmico rejeita payload contaminado com comandos adversariais. | Integração |
 | [`test_anti_invention_benchmark.py`](file:///home/Aelton0/Dev/Projeto%20AGI/Aletheia/tests/test_anti_invention_benchmark.py) | 1 | Auditoria contra alucinação de variáveis deliberadamente omitidas (modelo deve formular `Unknown` em vez de inventar premissas). | Integração |
 | [`test_llm_critique_capability.py`](file:///home/Aelton0/Dev/Projeto%20AGI/Aletheia/tests/test_llm_critique_capability.py) | 1 | Ciclo ponta a ponta: Workspace $\to$ Analyzer $\to$ Selector $\to$ Projection $\to$ LLMCritique $\to$ Kernel Validation $\to$ Event Store $\to$ Replay. | E2E |
@@ -35,10 +35,12 @@ Localizada em [`benchmarks/canonical_scenarios.py`](file:///home/Aelton0/Dev/Pro
 3. **Pesquisa Científica (2 cenários)**: Hipótese de Composto Biológico in vivo, Arbitragem de Satélites Conflitantes.
 4. **Aprendizagem / Cognição (2 cenários)**: Método de Estudo Espaçado, Currículo Quântico Bottom-Up vs Top-Down.
 
-### Métricas Avaliadas no Benchmark:
-* **RHR (*Referential Hallucination Rate*)**: 0.0% (Meta 0.0% mantida nos 10 cenários).
-* **CGR (*Claim Grounding Rate*)**: 100.0% (Meta $\ge$ 90% mantida nos 10 cenários).
-* **Profundidade Crítica (Rubrica 0-5)**: Média de 3.0/5 para capacidades determinísticas vs 5.0/5 para capacidades impulsionadas por LLM (+67% de profundidade).
+> [!NOTE]
+> **Delimitação de Escopo do Benchmark**:
+> O benchmark mede a **integração funcional e o contrato de dados** no runtime sob um provedor mock cooperativo.
+> As métricas RHR (0.0%) e CGR (100.0%) atestam que o fluxo de ponta a ponta preserva IDs e premissas autorizadas.
+> A robustez da fronteira contra adversidade real e alucinações é comprovada por testes unitários dedicados (`test_structural_validator_purges_hallucinated_ids` e `test_hostile_adversarial_provider_quarantine`).
+> A pontuação de profundidade crítica (5/5 vs 3/5) reflete uma heurística textual interna documentada no registro de dívida como **TD-09**.
 
 ---
 

@@ -53,13 +53,13 @@ Este documento reconstrói as decisões arquiteturais fundamentais tomadas duran
 ---
 
 ### ADR-05: Fronteira de Segurança Cognitiva em Dois Estágios para LLMs
-* **Decisão**: Submeter todo output de LLM a validação estrutural e validação epistemológica antes da aceitação pelo Kernel.
+* **Decisão**: Submeter todo output de LLM a validação estrutural e validação epistemológica antes da aceitação pelo Kernel, com inspeção dupla (payload limpo e bruto) e política fail-safe ("tudo ou nada").
 * **Contexto**: Modelos probabilísticos alucinam identificadores e premissas inexistentes, e são vulneráveis a ataques de prompt injection contidos nos dados de entrada.
-* **Solução adotada**: Pipeline de contenção com (1) `ProjectionPromptSerializer` demarcando dados vs comandos, (2) `StructuralValidator` purgando IDs alucinados e calculando RHR, e (3) `EpistemicValidator` calculando grounding (CGR) e calibrando suporte epistêmico real.
-* **Evidência**: [`aletheia/cognition/capabilities/llm_critique.py:L76-109`](file:///home/Aelton0/Dev/Projeto%20AGI/Aletheia/aletheia/cognition/capabilities/llm_critique.py#L76-L109), commit `e0b1978`.
-* **Motivação conhecida**: Garantir que nenhum ID ou premissa espúria atravesse para o grafo epistêmico.
-* **Trade-offs**: Custo computacional adicional de sanitização e validação Pydantic após a resposta do modelo.
-* **Consequências**: Taxa de alucinação referencial comprovada de 0.0% no benchmark canônico.
+* **Solução adotada**: Pipeline de contenção com (1) `ProjectionPromptSerializer` demarcando dados vs comandos, (2) `StructuralValidator` purgando IDs alucinados e calculando RHR, e (3) `EpistemicValidator` auditando tanto o `valid_payload` quanto o `raw_payload` para evitar evasão por premissas purgadas, calculando grounding (CGR) e calibrando suporte epistêmico real. Em caso de injeção adversarial detectada, toda a resposta é rejeitada em bloco (quarentena fail-safe).
+* **Evidência**: [`aletheia/cognition/capabilities/llm_critique.py:L76-109`](file:///home/Aelton0/Dev/Projeto%20AGI/Aletheia/aletheia/cognition/capabilities/llm_critique.py#L76-L109), [`aletheia/cognition/adapters/llm/epistemic_validator.py:L53-86`](file:///home/Aelton0/Dev/Projeto%20AGI/Aletheia/aletheia/cognition/adapters/llm/epistemic_validator.py#L53-L86), [`tests/test_llm_security_boundary.py:L135-191`](file:///home/Aelton0/Dev/Projeto%20AGI/Aletheia/tests/test_llm_security_boundary.py#L135-L191).
+* **Motivação conhecida**: Garantir que nenhum ID, premissa espúria ou comando de injeção atravesse para o grafo epistêmico.
+* **Trade-offs**: Custo computacional adicional de sanitização pós-LLM; política tudo-ou-nada rejeita argumentos íntegros se houver contaminação em qualquer parte do payload.
+* **Consequências**: Conformidade estrita de contrato verificada no benchmark canônico; purga forçada de referências alucinadas e quarentena total de payloads hostis comprovadas por testes direcionados.
 * **Status**: **RATIFICADO E IMPLEMENTADO**.
 
 ---
