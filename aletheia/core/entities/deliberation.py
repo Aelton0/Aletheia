@@ -8,7 +8,7 @@ from aletheia.core.entities.epistemic import LifecycleStatus
 
 
 class AlternativeStatus(str, Enum):
-    """Status de uma alternativa no espaço deliberativo."""
+    """Status deliberativo de uma alternativa."""
     PROPOSED = "PROPOSED"
     ACCEPTED = "ACCEPTED"
     REJECTED = "REJECTED"
@@ -41,6 +41,7 @@ class Alternative(CognitiveEntity):
     title: str
     description: str
     status: AlternativeStatus = AlternativeStatus.PROPOSED
+    lifecycle_status: LifecycleStatus = LifecycleStatus.ACTIVE
     goal_refs: List[str] = Field(default_factory=list)
     constraint_refs: List[str] = Field(default_factory=list)
 
