@@ -130,3 +130,17 @@ Este documento registra os itens de dívida técnica explícita e implícita ide
 * **Motivo**: Estrutura intencionalmente simples para o Milestone 0.
 * **Recomendação**: Implementar mecanismo de snapshot periódico do grafo para permitir replays a partir do último snapshot em vez do início absoluto do tempo.
 * **Prioridade**: **P3 (Melhoria futura)**.
+
+---
+
+### TD-09: Calibração Empírica e Validação Externa da Rubrica de Profundidade Crítica
+* **ID**: TD-09
+* **Descrição**: A avaliação de profundidade crítica (escala 0 a 5) no `EpistemicValidator` é baseada em heurísticas textuais por palavras-chave e contagem de campos (ex: menção a "impacto/falha" e presença de `contingency_hypothesis`). O benchmark canônico atual pontua o mock com base nessa regra interna, configurando uma medição autorreferencial.
+* **Local**: [`aletheia/cognition/adapters/llm/epistemic_validator.py`](file:///home/Aelton0/Dev/Projeto%20AGI/Aletheia/aletheia/cognition/adapters/llm/epistemic_validator.py)
+* **Evidência**: O `MockLLMAdapter` é estruturado para sempre incluir `contingency_hypothesis`, atingindo a nota máxima 5/5 no próprio validador do sistema sem validação externa.
+* **Impacto**: Risco de falsa sensação de superioridade cognitiva da capacidade baseada em LLM sobre a determinística antes de uma aferição qualitativa independente.
+* **Probabilidade**: ALTA (se a métrica for interpretada como julgamento semântico real).
+* **Severidade**: BAIXA funcionalmente (não corrompe o estado do Kernel), mas ALTA metodologicamente.
+* **Motivo**: Necessidade de estabelecer uma primeira métrica ordinal no M3 para validar o fluxo de dados ponta a ponta.
+* **Recomendação**: Submeter as críticas geradas por LLM real (TD-06) a avaliação cega anotada por especialistas humanos ou arbitragem por modelo juiz externo calibrado.
+* **Prioridade**: **P3 (Melhoria metodológica)**.
