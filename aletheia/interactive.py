@@ -1,12 +1,11 @@
 """CLI Interativa da Aletheia: Sentar à mesa e pensar junto.
 
-Permite experimentar o Cognitive Workspace interativo diretamente pelo terminal.
+Permite experimentar o Cognitive Workspace e o Capability Runtime interativamente pelo terminal.
 """
 
 import os
 import sys
 
-# Garante que o diretório raiz do projeto esteja no path para importação limpa
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 if project_root not in sys.path:
@@ -22,22 +21,24 @@ from aletheia.interaction.session import InteractiveSession
 
 def print_banner() -> None:
     print("=" * 70)
-    print("  ALETHEIA — Cognitive Kernel v0.1 (Interactive Mode)")
+    print("  ALETHEIA — Cognitive Kernel v0.1 (Interactive Mode & Capability Runtime)")
     print("  Sistema de Cognição Colaborativa Humano-IA")
     print("=" * 70)
     print("Comandos disponíveis:")
-    print("  /problem <texto>      - Define o problema ou meta principal")
-    print("  /claim <texto>        - Adiciona uma premissa/suposição")
-    print("  /fact <texto>         - Adiciona um fato verificado")
-    print("  /alt <título> | <desc>- Propõe uma alternativa de solução")
-    print("  /link <alt_id> <c_id> - Conecta alternativa a uma premissa de dependência")
+    print("  /problem <texto>        - Define o problema ou meta principal")
+    print("  /claim <texto>          - Adiciona uma premissa/suposição")
+    print("  /fact <texto>           - Adiciona um fato verificado")
+    print("  /alt <título> | <desc>  - Propõe uma alternativa de solução")
+    print("  /link <alt_id> <c_id>   - Conecta alternativa a uma premissa de dependência")
     print("  /challenge <id> <motivo>- Contesta uma premissa (HumanInitiative)")
-    print("  /focus <tema>         - Muda o foco da deliberação (HumanDirectionChanged)")
-    print("  /interpret            - Solicita a interpretação cognitiva da Aletheia")
+    print("  /step                   - Dispara um passo atômico do Capability Runtime")
+    print("  /think                  - Executa ciclo autônomo de capacidades até estabilização")
+    print("  /focus <tema>           - Muda o foco da deliberação (HumanDirectionChanged)")
+    print("  /interpret              - Solicita a interpretação cognitiva da Aletheia")
     print("  /decide <alt_id> <escopo> - Ratifica um CDR")
-    print("  /status               - Exibe o resumo do grafo cognitivo")
-    print("  /replay               - Testa o replay determinístico da sessão")
-    print("  /exit                 - Encerra a sessão")
+    print("  /status                 - Exibe o resumo do grafo cognitivo")
+    print("  /replay                 - Testa o replay determinístico da sessão")
+    print("  /exit                   - Encerra a sessão")
     print("=" * 70)
 
 
@@ -112,6 +113,27 @@ def run_cli() -> None:
                 else:
                     print("Uso: /challenge <claim_id> <motivo>")
 
+            elif user_input.startswith("/step"):
+                res = session.step_capabilities()
+                if res:
+                    print(f"⚙️ Step executado: [{res.capability_name}] sobre alvo '{res.target_ref}'")
+                    print(f"   Rationale: {res.rationale}")
+                    for ent in res.produced_entities:
+                        print(f"   + Entidade produzida [{ent.id}]: {ent.__class__.__name__}")
+                    if res.human_action_request:
+                        print(f"   👉 Ação solicitada ao humano: {res.human_action_request.action_type.value} -> {res.human_action_request.reason}")
+                else:
+                    print("ℹ️ Nenhuma capacidade aplicável no momento (estado em equilíbrio).")
+
+            elif user_input.startswith("/think"):
+                results = session.run_capability_policy(safety_limit=5)
+                if results:
+                    print(f"🧠 Ciclo concluído: {len(results)} capacidades executadas.")
+                    for idx, res in enumerate(results, 1):
+                        print(f"   {idx}. [{res.capability_name}] -> {res.rationale}")
+                else:
+                    print("ℹ️ Nenhuma capacidade aplicável no momento.")
+
             elif user_input.startswith("/focus"):
                 theme = user_input[len("/focus"):].strip()
                 if theme:
@@ -154,7 +176,7 @@ def run_cli() -> None:
                 print(f"🔁 Replay determinístico concluído: {rep_nodes}/{orig_nodes} nós perfeitamente reconstruídos a partir de {len(events)} eventos.")
 
             else:
-                print(f"Comando não reconhecido. Digite /problem, /claim, /alt, /challenge, /focus, /interpret ou /exit.")
+                print(f"Comando não reconhecido. Digite /problem, /claim, /alt, /challenge, /step, /think, /focus, /interpret ou /exit.")
 
         except KeyboardInterrupt:
             print("\nSessão interrompida pelo usuário.")

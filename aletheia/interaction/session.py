@@ -1,11 +1,19 @@
-"""Sessão Interativa de Cognição Colaborativa (M1).
+"""Sessão Interativa de Cognição Colaborativa (M1 & M2).
 
-Conecta o Humano, o Cognitive Workspace, o Motor de Projeção e o Raciocínio Estrutural.
-Garante a Invariante de Iniciativa Mista sem reinício de sessão.
+Conecta o Humano, o Cognitive Workspace, o Motor de Projeção e o Capability Runtime.
+Garante a Invariante de Iniciativa Mista e execução controlada de capacidades.
 """
 
 from typing import Any, Dict, List, Optional
+from aletheia.cognition.capabilities import (
+    CapabilityResult,
+    CapabilityRegistry,
+    CritiqueCapability,
+    QuestionGenerationCapability,
+    ViabilityReviewCapability,
+)
 from aletheia.cognition.reasoning.synthesizer import CognitiveSynthesizer
+from aletheia.cognition.runtime import CapabilityRuntime
 from aletheia.core.context.projection import CognitiveProjection, ProjectionEngine
 from aletheia.core.context.workspace import CognitiveWorkspace
 from aletheia.core.entities import (
@@ -37,6 +45,7 @@ class InteractiveSession:
         self,
         human_name: str = "Aelton",
         workspace: Optional[CognitiveWorkspace] = None,
+        runtime: Optional[CapabilityRuntime] = None,
     ) -> None:
         self.workspace = workspace or CognitiveWorkspace()
         self.human = HumanActor.create_default(human_name)
@@ -47,6 +56,13 @@ class InteractiveSession:
         )
         self.workspace.introduce_entity(self.human, actor_id=self.human.id)
         self.workspace.introduce_entity(self.system_actor, actor_id=self.system_actor.id)
+
+        # Inicializa o Capability Runtime com as capacidades padrão do M2
+        self.runtime = runtime or CapabilityRuntime()
+        if not self.runtime.registry.get_all():
+            self.runtime.registry.register(CritiqueCapability())
+            self.runtime.registry.register(ViabilityReviewCapability())
+            self.runtime.registry.register(QuestionGenerationCapability())
 
         self.current_focus: Optional[str] = None
 
@@ -59,7 +75,6 @@ class InteractiveSession:
         """Passo 1 & 2: Humano expressa a intenção e Aletheia registra no contexto."""
         created_ids: List[str] = []
 
-        # Meta principal
         main_goal = Goal(
             id=generate_id("goal"),
             statement=statement,
@@ -70,7 +85,6 @@ class InteractiveSession:
         self.workspace.introduce_entity(main_goal, actor_id=self.human.id)
         created_ids.append(main_goal.id)
 
-        # Restrições
         for c_stmt in constraints or []:
             const = Constraint(
                 id=generate_id("const"),
@@ -104,6 +118,23 @@ class InteractiveSession:
         self.workspace.introduce_entity(claim, actor_id=actor)
         return claim
 
+    def introduce_unknown(
+        self,
+        description: str,
+        blocking: bool = False,
+        author_id: Optional[str] = None,
+    ) -> Unknown:
+        """Introduz uma incerteza explícita (Unknown) no workspace."""
+        actor = author_id or self.human.id
+        unknown = Unknown(
+            id=generate_id("unk"),
+            author_id=actor,
+            description=description,
+            blocking=blocking,
+        )
+        self.workspace.introduce_entity(unknown, actor_id=actor)
+        return unknown
+
     def propose_alternative(
         self,
         title: str,
@@ -122,12 +153,10 @@ class InteractiveSession:
         )
         self.workspace.introduce_entity(alt, actor_id=actor)
 
-        # Conecta às metas
         for gid in addresses_goal_ids or []:
             if self.workspace.graph.has_node(gid):
                 self.workspace.connect(alt.id, gid, EdgeRelation.ADDRESSES, actor_id=actor)
 
-        # Conecta às premissas das quais depende
         for cid in depends_on_claim_ids or []:
             if self.workspace.graph.has_node(cid):
                 self.workspace.connect(alt.id, cid, EdgeRelation.DEPENDS_ON, actor_id=actor)
@@ -135,7 +164,7 @@ class InteractiveSession:
         return alt
 
     def challenge_premise(self, claim_id: str, rationale: str) -> List[str]:
-        """Passo 4 & 5: Humano contesta uma premissa; Kernel suspende derivados."""
+        """Humano contesta uma premissa; Kernel suspende derivados."""
         return self.workspace.challenge(
             claim_id=claim_id,
             actor_id=self.human.id,
@@ -143,7 +172,7 @@ class InteractiveSession:
         )
 
     def change_direction(self, focus: str) -> CognitiveProjection:
-        """Passo 6: Humano muda o foco cognitivo ('HumanDirectionChanged')."""
+        """Humano muda o foco cognitivo ('HumanDirectionChanged')."""
         prev_focus = self.current_focus
         self.current_focus = focus.strip()
 
@@ -168,12 +197,22 @@ class InteractiveSession:
         )
 
     def get_interpretation(self) -> str:
-        """Passo 3: Aletheia apresenta sua interpretação estrutural do estado atual."""
+        """Aletheia apresenta sua interpretação estrutural do estado atual."""
         projection = self.get_projection()
         return CognitiveSynthesizer.generate_interpretation(
             graph=self.workspace.graph,
             projection=projection,
         )
+
+    def step_capabilities(
+        self, capability_name: Optional[str] = None, target_id: Optional[str] = None
+    ) -> Optional[CapabilityResult]:
+        """Executa um step único de capacidade cognitiva pelo Runtime."""
+        return self.runtime.step(self.workspace, capability_name, target_id)
+
+    def run_capability_policy(self, safety_limit: int = 5) -> List[CapabilityResult]:
+        """Executa steps sucessivos até estabilização ou atingir o limite de segurança."""
+        return self.runtime.run_policy(self.workspace, safety_limit=safety_limit)
 
     def deliberate_and_decide(
         self,
@@ -185,7 +224,7 @@ class InteractiveSession:
         dissenting_views: Optional[List[DissentingView]] = None,
         reversibility: ReversibilityType = ReversibilityType.TYPE_2_REVERSIBLE,
     ) -> CognitiveDecisionRecord:
-        """Passo 9: Criação e ratificação do CDR contextual preservando dissidência."""
+        """Criação e ratificação do CDR contextual preservando dissidência."""
         cdr = CognitiveDecisionRecord(
             cdr_id=generate_id("cdr"),
             title=title,
